@@ -1,4 +1,4 @@
-## Embient 
+## Unity 3D Embient Lightning for android app
 
 - Main App Image
 
