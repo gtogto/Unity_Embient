@@ -8,9 +8,12 @@ using System.Text;
 
 public class bSerial : MonoBehaviour
 {
-    SerialPort sp = new SerialPort("COM26", 115200, Parity.None, 8, StopBits.One);
+    SerialPort sp = new SerialPort("COM4", 115200, Parity.None, 8, StopBits.One);
     // Start is called before the first frame update
 
+    //TODO : mgc Data format global val
+    //public GameObject light1;
+    
     public string message;
     
     public int val;
@@ -40,6 +43,7 @@ public class bSerial : MonoBehaviour
     public String[] mgc_sd_c;
 
     public String mgc_tail;
+
     //TODO ===============================================
 
     public float x_int;
@@ -51,32 +55,45 @@ public class bSerial : MonoBehaviour
     public float z_percent_formula;
     //TODO ===============================================
     public float xx;
-       
 
+    public Light light1;
+        
 
     // Use this for initialization
     void Start()
-    {
+    {        
         sp.Open();
-        sp.ReadTimeout = 50;
-        Debug.Log("Connection started");
-        sp.Write("test");
+        sp.ReadTimeout = 50;        
+
+        light1 = GetComponent<Light>();
+
     }
 
     // Update is called once per frame    
     void Update()
     {
+        gto_color.color_array cHex = new gto_color.color_array();
+        gto_color.color_array_int cInt = new gto_color.color_array_int();
+
         //byte[] bytesToSend = new byte[4] { 0x41, 0xFF, 0xFF, 0xFF };  //$D0 $F2 $FF $00 $06 $C7
         byte[] rgb_Color_1 = new byte[4] { 0x41, 0xFF, 0x00, 0x00 };  //$D0 $F2 $FF $00 $06 $C7
-        byte[] rgb_Color_2 = new byte[4] { 0x41, 0x80, 0x00, 0x00 };  //$D0 $F2 $FF $00 $06 $C7
+        byte[] rgb_Color_2 = new byte[4] { 0x41, 0xFF, 0x80, 0x00 };  //$D0 $F2 $FF $00 $06 $C7
         byte[] rgb_Color_3 = new byte[4] { 0x41, 0xFF, 0xBF, 0x00 };  //$D0 $F2 $FF $00 $06 $C7
-        byte[] rgb_Color_4 = new byte[4] { 0x41, 0xFF, 0xFF, 0xFF };  //$D0 $F2 $FF $00 $06 $C7
-        byte[] rgb_Color_5 = new byte[4] { 0x41, 0x00, 0xFF, 0x00 };  //$D0 $F2 $FF $00 $06 $C7
-        byte[] rgb_Color_6 = new byte[4] { 0x41, 0x00, 0x00, 0xFF };  //$D0 $F2 $FF $00 $06 $C7
-        byte[] rgb_Color_7 = new byte[4] { 0x41, 0x00, 0x00, 0xBB };  //$D0 $F2 $FF $00 $06 $C7
+        byte[] rgb_Color_4 = new byte[4] { 0x41, 0x00, 0xFF, 0x00 };  //$D0 $F2 $FF $00 $06 $C7
+        byte[] rgb_Color_5 = new byte[4] { 0x41, 0x00, 0x00, 0xFF };  //$D0 $F2 $FF $00 $06 $C7
+        byte[] rgb_Color_6 = new byte[4] { 0x41, 0x00, 0x00, 0xBB };  //$D0 $F2 $FF $00 $06 $C7
+        byte[] rgb_Color_7 = new byte[4] { 0x41, 0x99, 0x00, 0xCC };  //$D0 $F2 $FF $00 $06 $C7
         byte[] rgb_Color_8 = new byte[4] { 0x41, 0xFF, 0xFF, 0xFF };  //$D0 $F2 $FF $00 $06 $C7
         byte[] rgb_Color_9 = new byte[4] { 0x41, 0xAA, 0xAA, 0xAA };  //$D0 $F2 $FF $00 $06 $C7
         byte[] rgb_Color_10 = new byte[4] { 0x41, 0x00, 0x00, 0x00 };  //$D0 $F2 $FF $00 $06 $C7
+
+        Color redColor = new Color(0xFF, 0x00, 0x00);        
+        Color orangeColor = new Color(0xFF, 0x80, 0x00);
+        Color yellowColor = new Color(0xFF, 0xBF, 0x00);
+        Color greenColor = new Color(0x00, 0xFF, 0x00);
+        Color blueColor = new Color(0x00, 0x00, 0xFF);
+        Color navyColor = new Color(0x00, 0x00, 0xBB);
+        Color purpleColor = new Color(0x99, 0x00, 0xCC);
 
 
         if (sp.IsOpen)
@@ -111,57 +128,79 @@ public class bSerial : MonoBehaviour
 
             //Debug.Log(message);
             //sp.Write(bytesToSend, 0, bytesToSend.Length);
-            if (Math.Round((x_percent_formula * 100 / 100.0)) < 10 )
+            
+            
+            if (Math.Round((x_percent_formula * 100 / 100.0)) != 0)
             {
-                sp.Write(rgb_Color_1, 0, rgb_Color_1.Length);
+                if (Math.Round((x_percent_formula * 100 / 100.0)) < 10)
+                {
+                    //sp.Write(rgb_Color_1, 0, rgb_Color_1.Length);
+                    sp.Write(byte_merge(cHex.header,cHex.rgb_1), 0, rgb_Color_1.Length);                    
+                    light1.color = redColor;
+                }
+
+                else if (Math.Round((x_percent_formula * 100 / 100.0)) < 20)
+                {
+                    //sp.Write(rgb_Color_2, 0, rgb_Color_2.Length);
+                    sp.Write(byte_merge(cHex.header,cHex.rgb_2), 0, rgb_Color_1.Length);
+                    
+                    //sp.Write(cHex.header + cHex.rgb_2, 0, rgb_Color_1.Length);
+                    light1.color = orangeColor;
+                }
+
+                else if (Math.Round((x_percent_formula * 100 / 100.0)) < 30)
+                {
+                    sp.Write(byte_merge(cHex.header, cHex.rgb_3), 0, rgb_Color_1.Length);
+                    //light1.color = cInt.rgb_3;
+                    light1.color = yellowColor;
+                }
+
+                else if (Math.Round((x_percent_formula * 100 / 100.0)) < 40)
+                {
+                    sp.Write(byte_merge(cHex.header, cHex.rgb_4), 0, rgb_Color_1.Length);
+                    //light1.color = cInt.rgb_4;
+                    light1.color = greenColor;
+                }
+
+                else if (Math.Round((x_percent_formula * 100 / 100.0)) < 50)
+                {
+                    sp.Write(byte_merge(cHex.header, cHex.rgb_5), 0, rgb_Color_1.Length);
+                    //light1.color = cInt.rgb_5;
+                    light1.color = blueColor;
+                }
+
+                else if (Math.Round((x_percent_formula * 100 / 100.0)) < 60)
+                {
+                    sp.Write(byte_merge(cHex.header, cHex.rgb_6), 0, rgb_Color_1.Length);
+                    //light1.color = cInt.rgb_6;
+                    light1.color = navyColor;
+                }
+
+                else if (Math.Round((x_percent_formula * 100 / 100.0)) < 70)
+                {
+                    sp.Write(byte_merge(cHex.header, cHex.rgb_7), 0, rgb_Color_1.Length);
+                    //light1.color = cInt.rgb_7;
+                    light1.color = purpleColor;
+                }
+
+                else if (Math.Round((x_percent_formula * 100 / 100.0)) < 80)
+                {
+                    sp.Write(byte_merge(cHex.header, cHex.rgb_8), 0, rgb_Color_1.Length);
+                    //light1.color = color_array_int.rgb_8;
+                }
+
+                else if (Math.Round((x_percent_formula * 100 / 100.0)) < 90)
+                {
+                    sp.Write(byte_merge(cHex.header, cHex.rgb_9), 0, rgb_Color_1.Length);
+                    //light1.color = color_array_int.rgb_9;
+                }
+
+                else if (Math.Round((x_percent_formula * 100 / 100.0)) < 100)
+                {
+                    sp.Write(byte_merge(cHex.header, cHex.rgb_10), 0, rgb_Color_1.Length);
+                    //light1.color = color_array_int.rgb_10;
+                }
             }
-
-            else if (Math.Round((x_percent_formula * 100 / 100.0)) < 20)
-            {
-                sp.Write(rgb_Color_2, 0, rgb_Color_2.Length);
-            }
-
-            else if (Math.Round((x_percent_formula * 100 / 100.0)) < 30)
-            {
-                sp.Write(rgb_Color_3, 0, rgb_Color_3.Length);
-            }
-
-            else if (Math.Round((x_percent_formula * 100 / 100.0)) < 40)
-            {
-                sp.Write(rgb_Color_4, 0, rgb_Color_4.Length);
-            }
-
-            else if (Math.Round((x_percent_formula * 100 / 100.0)) < 50)
-            {
-                sp.Write(rgb_Color_5, 0, rgb_Color_5.Length);
-            }
-
-            else if (Math.Round((x_percent_formula * 100 / 100.0)) < 60)
-            {
-                sp.Write(rgb_Color_6, 0, rgb_Color_6.Length);
-            }
-
-            else if (Math.Round((x_percent_formula * 100 / 100.0)) < 70)
-            {
-                sp.Write(rgb_Color_7, 0, rgb_Color_7.Length);
-            }
-
-            else if (Math.Round((x_percent_formula * 100 / 100.0)) < 80)
-            {
-                sp.Write(rgb_Color_8, 0, rgb_Color_8.Length);
-            }
-
-            else if (Math.Round((x_percent_formula * 100 / 100.0)) < 90)
-            {
-                sp.Write(rgb_Color_9, 0, rgb_Color_9.Length);
-            }
-
-            else if (Math.Round((x_percent_formula * 100 / 100.0)) < 100)
-            {
-                sp.Write(rgb_Color_10, 0, rgb_Color_10.Length);
-            }
-
-
 
         }
 
@@ -258,8 +297,8 @@ public class bSerial : MonoBehaviour
                                         "[" + Math.Round((x_percent_formula * 100 / 100.0)) + "]" +
                                         "[" + Math.Round((y_percent_formula * 100 / 100.0)) + "]" +
                                         "[" + Math.Round((z_percent_formula * 100 / 100.0)) + "]");
-            
 
+            
 
             //print("X = " + mgc_X[0] + mgc_X[1]);
 
@@ -313,4 +352,49 @@ public class bSerial : MonoBehaviour
         Debug.Log("Closing port, because it was already open!");
     }
 
+    public static byte[] byte_merge(byte[] arg1, byte[] arg2)
+    {
+        byte[] tmp = new byte[arg1.Length + arg2.Length];
+        for (int i = 0; i < arg1.Length; i++)
+        {
+            tmp[i] = arg1[i];
+        }
+        for (int j = 0; j < arg2.Length; j++)
+        {
+            tmp[arg1.Length + j] = arg2[j];
+        }
+        return tmp;
+    }
+
+}
+
+namespace gto_color
+{
+    public class color_array
+    {
+        public byte[] header = new byte[1] { 0x41 };
+
+        public byte[] rgb_1 = new byte[3] { 0xFF, 0x00, 0x00 };
+        public byte[] rgb_2 = new byte[3] { 0xFF, 0x80, 0x00 };
+        public byte[] rgb_3 = new byte[3] { 0xFF, 0xBF, 0x00 };
+        public byte[] rgb_4 = new byte[3] { 0x00, 0xFF, 0x00 };
+        public byte[] rgb_5 = new byte[3] { 0x00, 0x00, 0xFF };
+        public byte[] rgb_6 = new byte[3] { 0x00, 0x00, 0xBB };
+        public byte[] rgb_7 = new byte[3] { 0x99, 0x00, 0xCC };
+        public byte[] rgb_8 = new byte[3] { 0xFF, 0xFF, 0xFF };
+        public byte[] rgb_9 = new byte[3] { 0xAA, 0xAA, 0xAA };
+        public byte[] rgb_10 = new byte[3] { 0x00, 0x00, 0x00 };
+            
+    }
+
+    public class color_array_int
+    {
+        public Color rgb_1 = new Color(0xFF, 0x00, 0x00);
+        public Color rgb_2 = new Color(0xFF, 0x80, 0x00);
+        public Color rgb_3 = new Color(0xFF, 0xBF, 0x00);
+        public Color rgb_4 = new Color(0x00, 0xFF, 0x00);
+        public Color rgb_5 = new Color(0x00, 0x00, 0xFF);
+        public Color rgb_6 = new Color(0x00, 0x00, 0xBB);
+        public Color rgb_7 = new Color(0x99, 0x00, 0xCC);
+    }
 }
