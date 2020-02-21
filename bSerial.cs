@@ -10,51 +10,34 @@ public class bSerial : MonoBehaviour
     SerialPort sp = new SerialPort("COM4", 115200, Parity.None, 8, StopBits.One);
  
     public string message;
-    public int packetLength;
-
-    public byte read_B;
+    public int packetLength;    
 
     //TODO : mgc Data format global val    
     public String[] mgc_header;
-
-    public String[] mgc_X;
-    public String[] mgc_Y;
-    public String[] mgc_Z;
-
+    public String[] mgc_X, mgc_Y, mgc_Z;
     public String[] mgc_touch;
     public String[] mgc_gesture;
-
-    public String[] mgc_cic_s;
-    public String[] mgc_cic_w;
-    public String[] mgc_cic_n;
-    public String[] mgc_cic_e;
-    public String[] mgc_cic_c;
-
-    public String[] mgc_sd_s;
-    public String[] mgc_sd_w;
-    public String[] mgc_sd_n;
-    public String[] mgc_sd_e;
-    public String[] mgc_sd_c;
+    public String[] mgc_cic_s, mgc_cic_w, mgc_cic_n, mgc_cic_e, mgc_cic_c;
+    public String[] mgc_sd_s, mgc_sd_w, mgc_sd_n, mgc_sd_e, mgc_sd_c;
     public String mgc_tail;
- 
 
-    public float x_int;
-    public float y_int;
-    public float z_int;
-
-    public float x_percent_formula;
-    public float y_percent_formula;
-    public float z_percent_formula;    
-
+    //TODO : Color global val    
+    public String[] rgb64 = new String[64];
+    public String string_R, string_G, string_B;    
+    public float x_int, y_int, z_int;    
+    public float x_percent_formula, y_percent_formula, z_percent_formula; 
+        
     public String magNetic_Packet;
     public SpectrumHandler spectrum;
     public float colorWheel_BarPosition;
+
+    public Color[] colors = new Color[64];
 
     // Use this for initialization
     void Start()
     {
         sp.Open();
-        sp.ReadTimeout = 50;
+        sp.ReadTimeout = 50;        
 
     }
 
@@ -62,38 +45,32 @@ public class bSerial : MonoBehaviour
     void Update()
     {
         if (sp.IsOpen)
-        {
+        {          
             message = "";
             byte tempB;
 
             try
             {                
                 tempB = (byte)sp.ReadByte();
-
                 while (tempB != 255)       
                 {
                     message += ((byte)tempB + " ");
                     tempB = (byte)sp.ReadByte();                    
                 }
-
-
             }
-            catch (System.Exception) { }
-
-            bool st = message.StartsWith("254");
-            bool ed = message.EndsWith("10 ");
-
+            catch (System.Exception) {
+            }
+            
+            /*check for STX&ETX*/
             if(st == true && ed == true)
             {
                 magNetic_Packet = message;
             }
-
         }
 
         if (magNetic_Packet != "")
         {
-            print("********" + magNetic_Packet);
-
+            //print("********" + magNetic_Packet);
             char[] delimiterChars = { ' ' };
             string[] message_split = magNetic_Packet.Split(delimiterChars);
 
@@ -148,29 +125,25 @@ public class bSerial : MonoBehaviour
                 {
                     colorWheel_BarPosition = colorWheel_BarPosition + 1;
                 }
-
                 else if (x_percent_formula > 1 && x_percent_formula < 20)
                 {
                     colorWheel_BarPosition = colorWheel_BarPosition - 1;
                 }
-
                 else if (y_percent_formula > 0 && x_percent_formula == 0)
                 {
                     colorWheel_BarPosition = colorWheel_BarPosition - 1;
                 }
-
                 else if (z_percent_formula > 0 && x_percent_formula == 0)
                 {
                     colorWheel_BarPosition = colorWheel_BarPosition - 1;
                 }
+                
             }
             else
             {
                 print("PACKET SIZE ERR");
-            }
-
-            spectrum.changValue(colorWheel_BarPosition);
-
+            }            
+                        
             if (colorWheel_BarPosition < 0)
             {
                 colorWheel_BarPosition = 0;
@@ -180,10 +153,38 @@ public class bSerial : MonoBehaviour
                 colorWheel_BarPosition = 100;
             }
 
+            /*send to UNITY Color Wheel Bar*/
+            spectrum.changValue(colorWheel_BarPosition);
+
+            /* Read to UNITY Engine Color.Elements*/
+            float R_red, G_green, B_blue;
+            R_red = spectrum.CurrentColor.r * 255;
+            G_green = spectrum.CurrentColor.g * 255;
+            B_blue = spectrum.CurrentColor.b * 255;
+
+            /* Float to String*/
+            String string_R = R_red.ToString();
+            String string_G = G_green.ToString();
+            String string_B = B_blue.ToString();
+
+            /* String to int*/
+            int string_R_int = Convert.ToInt32(string_R);
+            int string_G_int = Convert.ToInt32(string_G);
+            int string_B_int = Convert.ToInt32(string_B);
+                       
+            /*int to byte*/
+            byte R_result = Convert.ToByte(string_R_int);
+            byte G_result = Convert.ToByte(string_G_int);
+            byte B_result = Convert.ToByte(string_B_int);
+            
+            byte[] writeToLED = new byte[4] {0x41, R_result, G_result, B_result };
+
+            /*write to LED Colors*/
+            sp.Write(writeToLED, 0 ,4);
         }
 
     }
-
+    
     public string ConvertStringToHex(string asciiString)
     {
         string hex = "";
@@ -196,6 +197,31 @@ public class bSerial : MonoBehaviour
         return hex;
     }
 
+    public static byte[] byte_merge(byte[] arg1, byte[] arg2)
+    {
+        byte[] tmp = new byte[arg1.Length + arg2.Length];
+        for (int i = 0; i < arg1.Length; i++)
+        {
+            tmp[i] = arg1[i];
+        }
+        for (int j = 0; j < arg2.Length; j++)
+        {
+            tmp[arg1.Length + j] = arg2[j];
+        }
+        return tmp;
+    }
+
+    public string str2hex(string strData)
+    {
+        string resultHex = string.Empty;
+        byte[] arr_byteStr = Encoding.Default.GetBytes(strData);
+
+        foreach (byte byteStr in arr_byteStr)
+            resultHex += string.Format("{0:X2}", byteStr);
+
+        return resultHex;
+    }
+
     public void SendMessage(string msg)
     {
         sp.WriteLine(msg);
@@ -206,5 +232,5 @@ public class bSerial : MonoBehaviour
         sp.Close();
         Debug.Log("Closing port, because it was already open!");
     }
-
 }
+
